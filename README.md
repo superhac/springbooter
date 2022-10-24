@@ -34,13 +34,16 @@ optional arguments:
 
 ## Features
 - Springbooter will grab instances from Eureka endpoints and automaticly add them for Spring Boot Actuator enumeration.
-- Grab and Analyze endpoint responses looking for data leakage or Exploits
-  - Automaticly attempt to unsanitize value(s) found at the /env endpoint
-  - Look for exploits
-  - Find interesting keys/value pairs.
+- Spring Boot Actuators 
+  - Grab and Analyze endpoint responses looking for data leakage or Exploits
+    - Automaticly attempt to unsanitize value(s) found at the /env endpoint
+    - Look for exploits
+    - Find interesting keys/value pairs.
 
 ## Usage
 When SpringBooter is executed it will create a base directory, “sb_{UNIXTIMESTAP}” in the CWD.  In that directory it will create another directory named “endpoint-json”, where all the responses from the Spring Boot Actuator endpoints are stored. There will also be a file “alive-endpoints.json” created in the base directory that will contain all the enumerated data from the endpoints in the scan.
+
+Your endpoints for scanning can either be a Eurkea endpoint or an actuator endpoint.  Springbooter will figure it out.
 
 Enumerate a single endpoint:
 ```
