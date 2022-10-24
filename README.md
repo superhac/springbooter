@@ -55,6 +55,13 @@ Enumerate a list of hosts from a file:
 python springbooter.py -l 10.10.10.0-24-hosts.txt
 ```
 
+Example hosts file:
+```
+http://10.10.10.1:7777/actuator # spring 2.0
+http://10.10.10.2:7585 # spring 1.0
+http://10.10.10.3 # Eurkea ... It will figure it out
+```
+
 ## Example output
 Console:
 ```
