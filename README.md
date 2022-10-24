@@ -37,7 +37,7 @@ optional arguments:
 - Grab and Analyze endpoint responses looking for data leakage or Exploits
   - Automaticly attempt to unsanitize value(s) found at the /env endpoint
   - Look for exploits
-  - Find interesting keys/value paris.
+  - Find interesting keys/value pairs.
 
 ## Usage
 When SpringBooter is executed it will create a base directory, “sb_{UNIXTIMESTAP}” in the CWD.  In that directory it will create another directory named “endpoint-json”, where all the responses from the Spring Boot Actuator endpoints are stored. There will also be a file “alive-endpoints.json” created in the base directory that will contain all the enumerated data from the endpoints in the scan.
