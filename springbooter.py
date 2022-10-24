@@ -63,10 +63,11 @@ ENV_SEARCH_KEYS = { "spring.cloud.bootstrap.location":
                     "spring.datasource.url":"RCE: see https://0xn3va.gitbook.io/cheat-sheets/framework/spring/spring-boot-actuators#spring.datasource.url"}
 
 # keys to look for in /jolokia/list
-JOLOKIA_LIST_MBEANS = {"ch.qos.logback.classic":"The ch.qos.logback.classic MBean is installed which means it is susceptible RCE. Reference: https://www.veracode.com/blog/research/exploiting-spring-boot-actuators / Needs a better walkthrough.",}
+JOLOKIA_LIST_MBEANS = {"ch.qos.logback.classic":"The ch.qos.logback.classic MBean is installed which means it is susceptible RCE. Reference: https://www.veracode.com/blog/research/exploiting-spring-boot-actuators / Needs a better walkthrough.",
+                       "Tomcat":"One of the MBeans of Tomcat (embedded into Spring Boot) is createJNDIRealm. createJNDIRealm allows creating JNDIRealm that is vulnerable to JNDI injection. see https://0xn3va.gitbook.io/cheat-sheets/framework/spring/spring-boot-actuators#tomcat-createjndirealm"}
 
 # unsanitize beans
-UNSANITIZE_BEANS = ("org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager","org.springframework.boot:name=SpringApplication,type=Admin",)
+UNSANITIZE_BEANS = ("org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager","org.springframework.boot:name=SpringApplication,type=Admin", )
 
 ## Not implementated yet
 SAVE_JSON_OUT = False # add option to choose whether to save or json
@@ -462,6 +463,21 @@ def check_for_trace(url):
     datapoints['saveFilePath'] = saveFile
     add_datapoint(endpoints, baseUrl, "/trace", datapoints)   
 
+def check_for_gateway_routes(url):
+  baseUrl=url
+  datapoints = {}
+  url += "/gateway/routes"
+  print("  "+bcolors.UNDERLINE+bcolors.HEADER+"Fetching SBA @: "+url+bcolors.ENDC)
+  data = get_sba_ep_json(url)
+  if data is not None:
+    print(bcolors.OKGREEN+"      [+] /gateway/routes found."+bcolors.ENDC)
+    saveFile = SESSION_DIR+ENDPOINT_JSON_DIR+"/"+urlparse(url).netloc.replace(":","-")+"-gateway-routes.json"
+    save_json(saveFile,data)
+    print(bcolors.OKGREEN+"    [+] JSON saved to: "+saveFile+bcolors.ENDC)
+    print()
+    datapoints['saveFilePath'] = saveFile
+    add_datapoint(endpoints, baseUrl, "/gateway-routes", datapoints)
+
 def check_for_heapdump(url):
   if args.noheap is True:  # skip headdump
     return
@@ -571,6 +587,7 @@ for url in URLS:
           check_for_beans(ep['sbactuatorendpoint'])
           check_for_mappings(ep['sbactuatorendpoint'])
           check_for_configprops(ep['sbactuatorendpoint'])
+          check_for_gateway_routes(ep['sbactuatorendpoint'])
           check_for_heapdump(ep['sbactuatorendpoint'])
           
           URL_SBA_HISTORY.append(ep['sbactuatorendpoint'])
