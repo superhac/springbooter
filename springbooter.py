@@ -67,7 +67,7 @@ JOLOKIA_LIST_MBEANS = {"ch.qos.logback.classic":"The ch.qos.logback.classic MBea
                        "Tomcat":"One of the MBeans of Tomcat (embedded into Spring Boot) is createJNDIRealm. createJNDIRealm allows creating JNDIRealm that is vulnerable to JNDI injection. see https://0xn3va.gitbook.io/cheat-sheets/framework/spring/spring-boot-actuators#tomcat-createjndirealm"}
 
 # unsanitize beans
-UNSANITIZE_BEANS = ("org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager","org.springframework.boot:name=SpringApplication,type=Admin", )
+UNSANITIZE_BEANS = ("org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager","org.springframework.boot:name=SpringApplication,type=Admin")
 
 ## Not implementated yet
 SAVE_JSON_OUT = False # add option to choose whether to save or json
@@ -284,8 +284,7 @@ def match_key_in_json2(obj, key):
             if item is not None:
                 return item
 
-## processes /env
-def process_sba_env_json_data(url):
+def check_for_env(url):
     datapoints = {}
     exploits = {}
     print("  "+bcolors.UNDERLINE+bcolors.HEADER+"Fetching SBA @: "+url+ "/env"+bcolors.ENDC)
@@ -369,6 +368,7 @@ def check_for_info(url):
     save_json(saveFile,data)
     print(bcolors.OKGREEN+"    [+] JSON saved to: "+saveFile+bcolors.ENDC)
     print()
+    datapoints['info'] = data
     datapoints['saveFilePath'] = saveFile
     add_datapoint(endpoints, baseUrl, "/info", datapoints)
     
@@ -547,7 +547,6 @@ def add_datapoint(rootNode,baseUrl,ep, data):
  
 ### MAIN 
 banner()
-
 setargs = args_init()
 args = setargs.parse_args()
 
@@ -580,10 +579,10 @@ for url in URLS:
       URL_EUREKA_HISTORY.append(url)
       for ep in sbEndpoints:
         if not check_dup_urls(url, URL_SBA_HISTORY):
-          process_sba_env_json_data(ep['sbactuatorendpoint'])
+          check_for_info(ep['sbactuatorendpoint'])
+          check_for_env(ep['sbactuatorendpoint'])
           check_for_jolokia(ep['sbactuatorendpoint'])
           check_for_trace(ep['sbactuatorendpoint'])     
-          check_for_info(ep['sbactuatorendpoint'])
           check_for_beans(ep['sbactuatorendpoint'])
           check_for_mappings(ep['sbactuatorendpoint'])
           check_for_configprops(ep['sbactuatorendpoint'])
@@ -606,6 +605,4 @@ print("Total SBA Endpoints checked: "+ str(len(URL_SBA_HISTORY)))
 
 # save endpoint datapoints
 save_json(SESSION_DIR+"/alive-enpoints.json", endpoints)
-
-
 
