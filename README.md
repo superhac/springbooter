@@ -14,11 +14,11 @@ An enumerator for Spring Boot Eureka and Actuator endpoints
                                                              ░                                                
 
 		  SpringBooter 1.0 / 2022 SuperHac
-	An enumerator for Spring Boot Eureka and Actuator endpoints
+	An enumerator for Spring Boot Eureka,Cloud and Actuator endpoints
 
 usage: springbooter.py [OPTION] [FILE]...
 
-An enumerator for Spring Boot Eureka and Actuator endpoints.
+An enumerator for Spring Boot Eureka, Cloud and Actuator endpoints.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -33,7 +33,7 @@ optional arguments:
 </pre>
 
 ## Features
-- Springbooter will grab instances from Eureka endpoints and automaticly add them for Spring Boot Actuator enumeration.
+- Springbooter will grab instances from Eureka & Spring Boot Cloud endpoints and automaticly add them for Spring Boot Actuator enumeration.
 - Spring Boot Actuators 
   - Grab and Analyze endpoint responses looking for data leakage or Exploits
     - Automaticly attempt to unsanitize value(s) found at the /env endpoint
