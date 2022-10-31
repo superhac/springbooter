@@ -1,5 +1,5 @@
 # springbooter
-An enumerator for Spring Boot Eureka and Actuator endpoints
+An enumerator for Spring Boot Eureka, cloud and Actuator endpoints
 
 <pre>
   ██████  █    ██  ██▓███  ▓█████  ██▀███   ██░ ██  ▄▄▄       ▄████▄  
