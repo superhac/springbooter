@@ -67,7 +67,7 @@ JOLOKIA_LIST_MBEANS = {"ch.qos.logback.classic":"The ch.qos.logback.classic MBea
                        "Tomcat":"One of the MBeans of Tomcat (embedded into Spring Boot) is createJNDIRealm. createJNDIRealm allows creating JNDIRealm that is vulnerable to JNDI injection. see https://0xn3va.gitbook.io/cheat-sheets/framework/spring/spring-boot-actuators#tomcat-createjndirealm"}
 
 # unsanitize beans
-UNSANITIZE_BEANS = ("org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager","org.springframework.boot:name=SpringApplication,type=Admin")
+UNSANITIZE_BEANS = ("org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager","org.springframework.boot:name=SpringApplication,type=Admin",)
 
 ## Not implementated yet
 SAVE_JSON_OUT = False # add option to choose whether to save or json
@@ -76,7 +76,7 @@ SAVE_JSON_OUT = False # add option to choose whether to save or json
 def args_init():
   parser = argparse.ArgumentParser(
         usage="%(prog)s [OPTION] [FILE]...",
-        description="An enumerator for Spring Boot Eureka and Actuator endpoints."
+        description="An enumerator for Spring Boot Eureka, Cloud and Actuator endpoints."
     )
   parser.add_argument(
       "-v", "--version", action="version",
@@ -129,6 +129,8 @@ def get_sba_ep_json(url):
   except requests.exceptions.ReadTimeout:
      print("    [-]"+bcolors.FAIL+' ERROR: Read timed out. (read timeout=2) '+url+'.'+bcolors.ENDC)
 
+
+
 def get_eureka_apps(url):
     url = urlparse(url).scheme + "://" + urlparse(url).netloc
     print("  [-] Attempting to retireve JSON response => "+url+"/eureka/apps"); 
@@ -144,6 +146,24 @@ def get_eureka_apps(url):
         return data
       else:
         print(bcolors.FAIL+"    [-] Did not get a JSON response.  Not an Eureka endpoint?"+bcolors.ENDC)
+    except Exception as e:
+        print("  - Could not connect to: "+url)
+
+def get_sbc_apps(url):
+    url = urlparse(url).scheme + "://" + urlparse(url).netloc
+    print("  [-] Attempting to retireve JSON response => "+url+"/api/applications"); 
+    try:
+      r = requests.get(url+"/api/applications",headers={"Accept":"application/json"}, timeout=2)
+      if r.status_code == 200:
+        data = r.json()
+        print(bcolors.OKGREEN+"    [+] Recieved JSON data."+bcolors.ENDC);
+        #save Eureka JSON to disk  
+        saveFile = SESSION_DIR+ENDPOINT_JSON_DIR+"/"+urlparse(url).netloc.replace(":","-")+"-sbc-apps.json"
+        save_json(saveFile, data)
+        print(bcolors.OKGREEN+"  [+] JSON output from /api/applications saved to: "+saveFile+bcolors.ENDC)        
+        return data
+      else:
+        print(bcolors.FAIL+"    [-] Did not get a JSON response.  Not an Spring Boot Cloud endpoint?"+bcolors.ENDC)
     except Exception as e:
         print("  - Could not connect to: "+url)
 
@@ -169,10 +189,20 @@ def eureka_process(url):
         print(bcolors.OKGREEN+"  [+] JSON output from collected instances saved to: "+saveFile+bcolors.ENDC)
         return sbEndpoints
     else:
+       # check if spring boot cloud endpoint
+       print(bcolors.HEADER+"Attempting to connect via Spring Boot Cloud => "+bcolors.ENDC+url)
+       data = get_sbc_apps(url)
+       if data is not None:
+         sbEndpoints = parse_sbc_apps_json(data, url)
+         if sbEndpoints is not None: #save Eureka JSON to disk        
+           saveFile = SESSION_DIR+ENDPOINT_JSON_DIR+"/"+urlparse(url).netloc.replace(":","-")+"-sbc-instances.json"
+           save_json(saveFile, sbEndpoints)
+           print(bcolors.OKGREEN+"  [+] JSON output from collected instances saved to: "+saveFile+bcolors.ENDC)
+           return sbEndpoints
        # normally the eureka endpoint also has SBA endpoints.  So add it as an instance or ifs not it could be a SBA ep   
        print(bcolors.FAIL+"    [-] No Instances Found"+bcolors.ENDC)
        sbEndpoints = []
-       add_eureka_as_sba_ep(url,sbEndpoints)
+       add_eureka_as_sba_ep(url,sbEndpoints) ## add iteself
        print(bcolors.OKGREEN+"    [+] Adding itself as a Spring Boot Actuator ep."+bcolors.ENDC)
        return sbEndpoints
 
@@ -215,7 +245,35 @@ def parse_eureka_apps_json(data, url):
       print(bcolors.OKGREEN+"    [+] "+str(len(springBootEndPoints))+" instances found."+bcolors.ENDC)  
     
     return springBootEndPoints
+
+def parse_sbc_apps_json(data, url):
+    print("  [-] Parsing retrieved Spring Boot Cloud JSON response.")
+    springBootEndPoints=[]
+    try:
+        #t = data['applications']
+        #print(data)
+        for entry in data:
+            #print(entry)
+         
+            for instance in entry['instances']:
+              instances={}
+              instances['appname'] = entry['name']
+              #instances['url'] = instance['url']
+              instances['status'] = instance['status']
+              instances['sbactuatorendpoint'] = instance['url']
+              springBootEndPoints.append(instances)
+    except KeyError:
+      print(bcolors.FAIL+"    [-] Parsing error of Spring Boot Cloud json.  Not a Spring Boot Cloud json response?"+bcolors.ENDC)
+  
+    # normally the eureka endpoint also has SBA endpoints.  So add it as an instance    
+    add_eureka_as_sba_ep(url,springBootEndPoints)  
+    if len(springBootEndPoints) == 1:
+      print(bcolors.OKGREEN+"    [+] No instances found.  Adding itself as an SBA endpoint."+bcolors.ENDC)
+    else:   
+      print(bcolors.OKGREEN+"    [+] "+str(len(springBootEndPoints))+" instances found."+bcolors.ENDC)  
     
+    return springBootEndPoints
+
 def unsanitize_req(url, key, payload):   
    try:
      r = requests.post(url+"/jolokia", headers={"Content-Type":"application/json"},data = payload, timeout=2)
@@ -509,7 +567,7 @@ def save_json(filename, data):
 def banner():
     print (bcolors.OKBLUE+graphix+bcolors.ENDC)
     print (bcolors.OKBLUE+"\t\t  SpringBooter 1.0 / 2022 SuperHac\n"+bcolors.ENDC, end="")
-    print (bcolors.OKBLUE+"\tAn enumerator for Spring Boot Eureka and Actuator endpoints\n"+bcolors.ENDC)
+    print (bcolors.OKBLUE+"\tAn enumerator for Spring Boot Eureka, Cloud and Actuator endpoints\n"+bcolors.ENDC)
 
 def load_file_of_endpoints(filename):
   lines=[]
